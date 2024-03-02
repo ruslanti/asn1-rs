@@ -8,20 +8,14 @@ use crate::*;
 impl<'a, T> FromBer<'a> for Option<T>
 where
     T: FromBer<'a>,
-    T: Tagged,
 {
     fn from_ber(bytes: &'a [u8]) -> ParseResult<Self> {
         if bytes.is_empty() {
             return Ok((bytes, None));
         }
-        if let Ok((_, header)) = Header::from_ber(bytes) {
-            if T::TAG != header.tag {
-                // not the expected tag, early return
-                return Ok((bytes, None));
-            }
-        }
         match T::from_ber(bytes) {
             Ok((rem, t)) => Ok((rem, Some(t))),
+            Err(nom::Err::Error(Error::UnexpectedTag { .. })) => Ok((bytes, None)),
             Err(e) => Err(e),
         }
     }
@@ -42,20 +36,14 @@ impl<'a> FromBer<'a> for Option<Any<'a>> {
 impl<'a, T> FromDer<'a> for Option<T>
 where
     T: FromDer<'a>,
-    T: Tagged,
 {
     fn from_der(bytes: &'a [u8]) -> ParseResult<Self> {
         if bytes.is_empty() {
             return Ok((bytes, None));
         }
-        if let Ok((_, header)) = Header::from_der(bytes) {
-            if T::TAG != header.tag {
-                // not the expected tag, early return
-                return Ok((bytes, None));
-            }
-        }
         match T::from_der(bytes) {
             Ok((rem, t)) => Ok((rem, Some(t))),
+            Err(nom::Err::Error(Error::UnexpectedTag { .. })) => Ok((bytes, None)),
             Err(e) => Err(e),
         }
     }
